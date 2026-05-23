@@ -1,34 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Badge,
-  Button,
-  Card,
-  Input,
-  Progress,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography
-} from 'antd';
+import { Table, Tag, Tooltip, Progress, Input, Select, Space, Badge, Card, Typography, Button } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import { SearchOutlined } from '@ant-design/icons';
 
+import TopNav, { type AppMenuKey } from './components/app/TopNav';
+import DashboardPage from './pages/DashboardPage';
+import type { Divisi, Karyawan, StatusOperasional } from './routes/types';
+
 const { Title, Text } = Typography;
-
-type Divisi = 'Inbound' | 'Outbound' | 'Sorting' | 'Packing' | 'Rework';
-
-type StatusOperasional = 'ACTIVE' | 'BREAK' | 'OFF';
-
-type Karyawan = {
-  key: string;
-  nama: string;
-  divisi: Divisi;
-  status: StatusOperasional;
-  imeiTerpantau: number;
-  updatedAt: string; // ISO string
-};
 
 type SimData = {
   imeiTerpantauBase: number;
@@ -40,7 +19,9 @@ type SimData = {
 const DIVISI: Divisi[] = ['Inbound', 'Outbound', 'Sorting', 'Packing', 'Rework'];
 
 // Data contoh (bisa diganti ke API nantinya)
-const DATA_AWAL: Array<Omit<Karyawan, 'imeiTerpantau' | 'updatedAt'> & SimData> = [
+const DATA_AWAL: Array<
+  Omit<Karyawan, 'imeiTerpantau' | 'updatedAt'> & SimData
+> = [
   {
     key: 'k1',
     nama: 'Andi Saputra',
@@ -119,16 +100,16 @@ function formatTime(iso: string) {
   });
 }
 
-
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-function toStatusFromRandom(status: StatusOperasional, rng: number, breakChance: number, offChance: number) {
-  // Simple state machine (simulasi real-time)
-  // - ACTIVE bisa turun ke BREAK atau OFF
-  // - BREAK bisa naik ke ACTIVE atau tetap, juga bisa OFF
-  // - OFF bisa kembali ke ACTIVE atau tetap OFF
+function toStatusFromRandom(
+  status: StatusOperasional,
+  rng: number,
+  breakChance: number,
+  offChance: number
+) {
   if (status === 'ACTIVE') {
     if (rng < offChance) return 'OFF' as const;
     if (rng < offChance + breakChance) return 'BREAK' as const;
@@ -139,12 +120,40 @@ function toStatusFromRandom(status: StatusOperasional, rng: number, breakChance:
     if (rng < offChance * 0.6 + breakChance * 0.5) return 'BREAK' as const;
     return 'ACTIVE' as const;
   }
-  // OFF
   if (rng < offChance * 0.1) return 'OFF' as const;
   return rng < offChance * 0.1 + 0.25 ? ('BREAK' as const) : ('ACTIVE' as const);
 }
 
+// Placeholder pages for now (akan diisi berikutnya sesuai permintaan fitur)
+function ProfileManagementPage() {
+  return (
+    <div style={{ padding: 16, maxWidth: 1320, margin: '0 auto' }}>
+      <Card>
+        <Title level={4}>Profile Management</Title>
+        <Text type="secondary">
+          Menu ini akan menampilkan: edit profile, input data karyawan, barcode generator, KPI karyawan, import Excel, template.
+        </Text>
+      </Card>
+    </div>
+  );
+}
+
+function ScanInOutPage() {
+  return (
+    <div style={{ padding: 16, maxWidth: 1320, margin: '0 auto' }}>
+      <Card>
+        <Title level={4}>Scan In & Out Karyawan</Title>
+        <Text type="secondary">
+          Menu ini akan menampilkan tombol IN HOLD dan OUT HOLD lengkap dengan logika scan.
+        </Text>
+      </Card>
+    </div>
+  );
+}
+
 export default function App() {
+  const [activeKey, setActiveKey] = useState<AppMenuKey>('dashboard');
+
   const [filterDivisi, setFilterDivisi] = useState<Divisi | 'ALL'>('ALL');
   const [query, setQuery] = useState('');
   const [autoSimOn, setAutoSimOn] = useState(true);
@@ -174,24 +183,15 @@ export default function App() {
           const sim = simRef.current.get(r.key);
           if (!sim) return r;
 
-          // random tick (deterministic-ish per tick)
           const rng = Math.random();
           const nextStatus = toStatusFromRandom(r.status, rng, sim.breakChance, sim.offChance);
 
-          // imei increments depend on status
           let nextImei = r.imeiTerpantau;
-          if (nextStatus === 'ACTIVE') {
-            nextImei = nextImei + Math.floor(18 + Math.random() * 38);
-          } else if (nextStatus === 'BREAK') {
-            nextImei = nextImei + Math.floor(3 + Math.random() * 10);
-          } else {
-            // OFF => imei tidak bertambah (tetap)
-            nextImei = nextImei;
-          }
+          if (nextStatus === 'ACTIVE') nextImei = nextImei + Math.floor(18 + Math.random() * 38);
+          else if (nextStatus === 'BREAK') nextImei = nextImei + Math.floor(3 + Math.random() * 10);
 
           nextImei = clamp(nextImei, 0, 999999);
 
-          // updatedAt update only when something changes-ish
           const shouldUpdateTimestamp = nextStatus !== r.status || Math.random() < 0.7;
 
           return {
@@ -227,6 +227,7 @@ export default function App() {
   const maxImei = useMemo(() => {
     return Math.max(1, ...filtered.map((r) => r.imeiTerpantau));
   }, [filtered]);
+
 
   const columns: ColumnsType<Karyawan> = [
     {
@@ -268,12 +269,7 @@ export default function App() {
             <Text>{value.toLocaleString('id-ID')}</Text>
             <Text type="secondary">/ {maxImei.toLocaleString('id-ID')}</Text>
           </div>
-          <Progress
-            percent={Math.round((value / maxImei) * 100)}
-            size="small"
-            showInfo={false}
-            strokeColor="#1677ff"
-          />
+          <Progress percent={Math.round((value / maxImei) * 100)} size="small" showInfo={false} />
         </div>
       )
     },
@@ -299,90 +295,68 @@ export default function App() {
     setFilterDivisi('ALL');
   };
 
-  return (
-    <div style={{ padding: 16, maxWidth: 1320, margin: '0 auto' }}>
-      <div
-        style={{
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <Badge.Ribbon text="React + Vite + Ant Design" color="blue" />
-          <Badge.Ribbon text="Deployment: Production" color="purple" />
+  const renderBody = () => {
+    if (activeKey === 'profile') return <ProfileManagementPage />;
+    if (activeKey === 'scan_inout') return <ScanInOutPage />;
+
+    // Dashboard (existing table + better header)
+    return (
+      <div>
+        <div style={{ padding: 12, background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+          <Badge.Ribbon text="React + Vite + Ant Design" color="blue" style={{ marginLeft: 0 }} />
         </div>
+        <DashboardPage counts={counts} autoSimOn={autoSimOn} onToggleLive={() => setAutoSimOn((v) => !v)} />
 
-        <div style={{ marginLeft: 'auto' }}>
-          <Space>
-            <Button onClick={onReset}>Reset Filter</Button>
-            <Button type={autoSimOn ? 'primary' : 'default'} onClick={() => setAutoSimOn((v) => !v)}>
-              {autoSimOn ? 'Pause Live' : 'Resume Live'}
-            </Button>
-          </Space>
-        </div>
-      </div>
-
-      <Card>
-        <Space direction="vertical" style={{ width: '100%' }} size={12}>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ flex: '1 1 280px', minWidth: 280 }}>
-              <Title level={4} style={{ margin: 0 }}>
-                Monitoring & Tracking IMEI HP - Cileungsi DC
-              </Title>
-              <Text type="secondary">Real-time status pekerja per divisi (simulasi) • Tabel filter & search</Text>
-            </div>
-
-            <div style={{ flex: '0 0 auto' }}>
+        <div style={{ padding: 16, maxWidth: 1320, margin: '0 auto' }}>
+          <Card>
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
               <Space wrap>
-                <Tag color="green">Aktif: {counts.active}</Tag>
-                <Tag color="orange">Istirahat: {counts.brk}</Tag>
-                <Tag color="red">Off/Absen: {counts.off}</Tag>
-                <Tag color="blue">Total: {counts.total}</Tag>
+                <Select
+                  style={{ width: 230 }}
+                  value={filterDivisi}
+                  onChange={(v) => setFilterDivisi(v)}
+                  options={[{ value: 'ALL', label: 'Semua Divisi' }, ...DIVISI.map((d) => ({ value: d, label: d }))]}
+                />
+
+                <Input
+                  allowClear
+                  style={{ width: 360 }}
+                  placeholder="Cari nama karyawan..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  prefix={<SearchOutlined />}
+                />
+
+                <Tag color="blue">Data: {filtered.length} pekerja</Tag>
+
+                <Button onClick={onReset}>Reset Filter</Button>
               </Space>
-            </div>
-          </div>
 
-          <Space wrap>
-            <Select
-              style={{ width: 230 }}
-              value={filterDivisi}
-              onChange={(v) => setFilterDivisi(v)}
-              options={[
-                { value: 'ALL', label: 'Semua Divisi' },
-                ...DIVISI.map((d) => ({ value: d, label: d }))
-              ]}
-            />
+              <Table {...tableProps} />
 
-            <Input
-              allowClear
-              style={{ width: 360 }}
-              placeholder="Cari nama karyawan..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              prefix={<SearchOutlined />}
-            />
+              <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+                Legenda status:&nbsp;
+                <Tag color="green">Aktif</Tag>&nbsp;
+                <Tag color="orange">Istirahat</Tag>&nbsp;
+                <Tag color="red">Off/Absen</Tag>
+              </div>
+            </Space>
+          </Card>
+        </div>
 
-            <Tag color="blue">Data: {filtered.length} pekerja</Tag>
-          </Space>
-
-          <Table {...tableProps} />
-
-          <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
-            Legenda status:&nbsp;
-            <Tag color="green">Aktif</Tag>&nbsp;
-            <Tag color="orange">Istirahat</Tag>&nbsp;
-            <Tag color="red">Off/Absen</Tag>
-          </div>
-        </Space>
-      </Card>
-
-      <div style={{ marginTop: 14, textAlign: 'center', color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
-        {autoSimOn ? 'Live update aktif (simulasi) — refresh tiap ~5 detik' : 'Live update dijeda'}
+        <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+          {autoSimOn ? 'Live update aktif (simulasi) — refresh tiap ~5 detik' : 'Live update dijeda'}
+        </div>
       </div>
+    );
+  };
+
+  return (
+    <div>
+      <TopNav activeKey={activeKey} onChange={(key) => setActiveKey(key)} />
+      {renderBody()}
     </div>
   );
 }
+
 
