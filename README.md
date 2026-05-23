@@ -1,1 +1,4 @@
-# TRACKING-IMEI-CILEUNGSI-DC
+### Poin Penting di dalam File ini:
+1. **Badges Profesional:** Di bagian paling atas terdapat penanda otomatis (*badge*) untuk teknologi React, Ant Design, dan target *deployment*.
+2. **Struktur Dashboard Real-time:** Di dalam contoh kodenya, saya buatkan logika tabel lengkap dengan status menggunakan `Tag` bawaan Ant Design (misal: warna hijau untuk pekerja aktif, oranye untuk istirahat, merah untuk off/absen) sesuai karakteristik operasi *Distribution Center*.
+3. **Fitur Pencarian & Filter:** Komponen tabel sudah dilengkapi dengan filter divisi (Inbound, Outbound, Sorting, dll) serta pencarian nama karyawan.
