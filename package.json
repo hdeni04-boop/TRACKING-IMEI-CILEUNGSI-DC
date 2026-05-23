@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "antd": "^5.18.2",
+    "chart.js": "^4.5.1",
+    "dayjs": "^1.11.20",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-csv": "^2.2.2",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
@@ -21,4 +25,3 @@
     "vite": "^5.4.2"
   }
 }
-
